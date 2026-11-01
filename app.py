@@ -1,6 +1,10 @@
-from flask import Flask, jsonify, request, render_template
+from datetime import datetime
+
+from flask import Flask, jsonify, request, render_template, session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = "change-this-secret-key"   # change this before deploying
 
 # ---------- Restaurant details ----------
 restaurant = {
@@ -44,8 +48,15 @@ menu = [
     {"id": 24, "category": "Dessert", "name": "Kheer", "price": 110, "desc": "Creamy rice pudding"},
 ]
 
-orders = {}      # order id -> order
+# ---------- In-memory storage (cleared when the server restarts) ----------
+orders = {}            # order id -> order
 next_order_id = 1
+users = {}             # email -> {"name": ..., "password": hashed}
+saved_addresses = {}   # email -> [address, address, ...]
+
+
+def current_user():
+    return session.get("email")
 
 
 # ---------- Frontend pages ----------
@@ -59,7 +70,7 @@ def checkout():
     return render_template("checkout.html")
 
 
-# ---------- API routes ----------
+# ---------- Restaurant + menu ----------
 @app.route("/api/restaurant", methods=["GET"])
 def get_restaurant():
     return jsonify(restaurant)
@@ -73,31 +84,161 @@ def get_menu():
     return jsonify(menu)
 
 
+# ---------- User accounts ----------
+@app.route("/api/register", methods=["POST"])
+def register():
+    data = request.get_json(silent=True) or {}
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    if not name or "@" not in email or len(password) < 4:
+        return jsonify({"error": "Enter your name, a valid email and a password (at least 4 characters)."}), 400
+    if email in users:
+        return jsonify({"error": "This email is already registered. Please log in."}), 409
+    users[email] = {"name": name, "password": generate_password_hash(password)}
+    session["email"] = email
+    return jsonify({"name": name}), 201
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").strip().lower()
+    user = users.get(email)
+    if not user or not check_password_hash(user["password"], data.get("password", "")):
+        return jsonify({"error": "Wrong email or password."}), 401
+    session["email"] = email
+    return jsonify({"name": user["name"]})
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "Logged out"})
+
+
+@app.route("/api/me", methods=["GET"])
+def me():
+    email = current_user()
+    if email not in users:
+        return jsonify({"loggedIn": False})
+    return jsonify({"loggedIn": True, "name": users[email]["name"], "email": email})
+
+
+# ---------- Saved addresses ----------
+@app.route("/api/addresses", methods=["GET"])
+def get_addresses():
+    email = current_user()
+    if email not in users:
+        return jsonify({"error": "Please log in."}), 401
+    return jsonify(saved_addresses.get(email, []))
+
+
+@app.route("/api/addresses", methods=["POST"])
+def add_address():
+    email = current_user()
+    if email not in users:
+        return jsonify({"error": "Please log in."}), 401
+    text = (request.get_json(silent=True) or {}).get("address", "").strip()
+    if not text:
+        return jsonify({"error": "Address is empty."}), 400
+    addresses = saved_addresses.setdefault(email, [])
+    if text not in addresses:
+        addresses.append(text)
+    return jsonify(addresses), 201
+
+
+# ---------- Orders ----------
+def build_items(raw_items):
+    """Check the cart and work out the total using real menu prices."""
+    if not isinstance(raw_items, list) or not raw_items:
+        return None, 0
+    items, total = [], 0
+    for item in raw_items:
+        try:
+            dish_id, qty = int(item["id"]), int(item["qty"])
+        except (KeyError, TypeError, ValueError):
+            return None, 0
+        dish = next((d for d in menu if d["id"] == dish_id), None)
+        if not dish or qty < 1 or qty > 50:
+            return None, 0
+        items.append({"name": dish["name"], "qty": qty, "price": dish["price"]})
+        total += dish["price"] * qty
+    return items, total
+
+
+def check_payment(pay):
+    """Mock payment: only checks the details look valid. Nothing is charged
+    and a full card number is never stored. Returns a label, or None."""
+    if not isinstance(pay, dict):
+        return None
+    method = pay.get("method")
+    if method == "cash":
+        return "Cash"
+    if method == "upi" and "@" in str(pay.get("upi", "")):
+        return "UPI: " + str(pay["upi"]).strip()
+    if method == "card":
+        number = str(pay.get("number", "")).replace(" ", "")
+        cvv = str(pay.get("cvv", ""))
+        if number.isdigit() and len(number) == 16 and cvv.isdigit() and len(cvv) in (3, 4):
+            return "Card ending " + number[-4:]
+    if method == "netbanking" and pay.get("bank"):
+        return "Net Banking: " + str(pay["bank"])
+    return None
+
+
 @app.route("/api/orders", methods=["GET"])
 def get_orders():
-    return jsonify(list(orders.values()))
+    """Order history: only the logged-in user's own orders, newest first."""
+    email = current_user()
+    if email not in users:
+        return jsonify({"error": "Please log in."}), 401
+    mine = [o for o in orders.values() if o["user"] == email]
+    return jsonify(sorted(mine, key=lambda o: o["id"], reverse=True))
 
 
 @app.route("/api/orders", methods=["POST"])
 def place_order():
     global next_order_id
-    data = request.get_json()
+    email = current_user()
+    if email not in users:
+        return jsonify({"error": "Please log in to place an order."}), 401
+
+    data = request.get_json(silent=True) or {}
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    order_type = data.get("type")                    # "delivery" or "dinein"
+    address = data.get("address", "").strip()
+    table = str(data.get("table", "")).strip()
 
     # Check that all fields are filled
-    if not data.get("name") or not data.get("phone") or not data.get("address") or not data.get("items"):
-        return jsonify({"error": "Please fill all details and add at least one dish."}), 400
+    if not name or not phone:
+        return jsonify({"error": "Please enter your name and phone number."}), 400
+    if not (phone.isdigit() and len(phone) == 10):
+        return jsonify({"error": "Please enter a valid 10-digit phone number."}), 400
+    if order_type == "delivery":
+        if not address:
+            return jsonify({"error": "Please enter a delivery address."}), 400
+        where = "Delivery to: " + address
+    elif order_type == "dinein":
+        if not table:
+            return jsonify({"error": "Please enter your table number."}), 400
+        where = "Dine-in: Table " + table
+    else:
+        return jsonify({"error": "Please choose Home Delivery or Dine-in."}), 400
 
-    # Work out the total on the server using real menu prices
-    items, total = [], 0
-    for item in data["items"]:
-        dish = next((d for d in menu if d["id"] == item["id"]), None)
-        if dish:
-            qty = int(item["qty"])
-            items.append({"name": dish["name"], "qty": qty, "price": dish["price"]})
-            total += dish["price"] * qty
+    items, total = build_items(data.get("items"))
+    if items is None:
+        return jsonify({"error": "Your cart is empty or has an invalid item."}), 400
 
-    order = {"id": next_order_id, "name": data["name"], "phone": data["phone"],
-             "address": data["address"], "items": items, "total": total}
+    payment = check_payment(data.get("payment"))
+    if payment is None:
+        return jsonify({"error": "Please check your payment details."}), 400
+
+    order = {"id": next_order_id, "user": email, "name": name, "phone": phone,
+             "type": order_type, "where": where, "address": address, "table": table,
+             "items": items, "total": total, "payment": payment,
+             "time": datetime.now().strftime("%d %b %Y, %I:%M %p")}
     orders[next_order_id] = order
     next_order_id += 1
     return jsonify(order), 201
@@ -105,10 +246,11 @@ def place_order():
 
 @app.route("/api/orders/<int:order_id>", methods=["DELETE"])
 def cancel_order(order_id):
-    if order_id in orders:
-        del orders[order_id]
-        return jsonify({"message": "Order cancelled"})
-    return jsonify({"error": "Order not found"}), 404
+    order = orders.get(order_id)
+    if not order or order["user"] != current_user():
+        return jsonify({"error": "Order not found"}), 404
+    del orders[order_id]
+    return jsonify({"message": "Order cancelled"})
 
 
 if __name__ == "__main__":
