@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spice Garden</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    button, input, textarea { font-family: inherit; }
+    body { font-family: 'Bitter', Georgia, serif; margin: 0; background: #f5ebdc; color: #3e2723; }
+    .topbar { background: #3e2723; color: #f5ebdc; text-align: center; padding: 8px; font-size: 14px; }
+    header { background: #4e342e; color: #f5ebdc; text-align: center; padding: 40px 20px; border-bottom: 4px solid #e8d5b7; }
+    header h1 { margin: 0; font-size: 40px; }
+    nav { background: #e8d5b7; text-align: center; padding: 10px; }
+    nav a { color: #3e2723; margin: 0 15px; text-decoration: none; font-weight: bold; }
+    .container { max-width: 700px; margin: auto; padding: 10px 20px 100px; }
+    h2 { background: #3e2723; color: #f5ebdc; padding: 10px 15px; border-radius: 8px; margin: 30px 0 0; }
+
+    /* Vertical menu: one dish per row */
+    .dish { display: flex; justify-content: space-between; align-items: center; background: #fffaf2; border-bottom: 2px solid #e8d5b7; padding: 14px 15px; }
+    .dish h3 { margin: 0 0 4px; }
+    .dish p { margin: 0; font-size: 14px; color: #6d4c41; }
+    .right { text-align: center; }
+    .price { font-weight: bold; margin-bottom: 6px; }
+    .plus { background: #3e2723; color: #f5ebdc; border: 2px solid #3e2723; width: 36px; height: 36px; border-radius: 50%; font-size: 22px; cursor: pointer; line-height: 1; }
+    .plus:hover { background: #8d6e63; border-color: #8d6e63; }
+
+    .cartbar { position: fixed; bottom: 0; left: 0; right: 0; background: #3e2723; color: #f5ebdc; border-top: 3px solid #e8d5b7; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .cartbar a { background: #e8d5b7; color: #3e2723; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+    #contact { background: #e8d5b7; padding: 30px 20px; text-align: center; }
+    footer { background: #3e2723; color: #e8d5b7; text-align: center; padding: 15px; margin-bottom: 60px; }
+  </style>
+</head>
+<body>
+  <div class="topbar" id="topbar">Loading...</div>
+
+  <header>
+    <h1 id="rname">Spice Garden</h1>
+    <p id="tagline"></p>
+  </header>
+
+  <nav>
+    <a href="#Starters">Starters</a>
+    <a href="#Main Dish">Main Dish</a>
+    <a href="#Drinks">Drinks</a>
+    <a href="#Dessert">Dessert</a>
+    <a href="#contact">Contact</a>
+  </nav>
+
+  <div class="container" id="menu"></div>
+
+  <section id="contact">
+    <h2 style="margin-top:0">Visit or Call Us</h2>
+    <p id="address"></p>
+    <p id="phone"></p>
+    <p id="email"></p>
+    <p id="hours"></p>
+  </section>
+
+  <footer>&copy; 2026 Spice Garden. All rights reserved.</footer>
+
+  <div class="cartbar">
+    <span id="cartinfo">Cart is empty</span>
+    <a href="/checkout">Checkout</a>
+  </div>
+
+  <script>
+    let allDishes = [];
+    const categories = ["Starters", "Main Dish", "Drinks", "Dessert"];
+
+    // Cart is saved in the browser so the checkout page can read it
+    function getCart() { return JSON.parse(localStorage.getItem("cart") || "{}"); }
+    function saveCart(cart) { localStorage.setItem("cart", JSON.stringify(cart)); }
+
+    function addToCart(id) {
+      const cart = getCart();
+      cart[id] = (cart[id] || 0) + 1;
+      saveCart(cart);
+      showCartInfo();
+    }
+
+    function showCartInfo() {
+      const cart = getCart();
+      let count = 0, total = 0;
+      for (const id in cart) {
+        const dish = allDishes.find(d => d.id == id);
+        if (dish) { count += cart[id]; total += dish.price * cart[id]; }
+      }
+      document.getElementById("cartinfo").innerText =
+        count === 0 ? "Cart is empty" : count + " item(s)  |  Total: Rs " + total;
+    }
+
+    // GET restaurant details from the API
+    async function loadRestaurant() {
+      const res = await fetch("/api/restaurant");
+      const r = await res.json();
+      document.getElementById("rname").innerText = r.name;
+      document.getElementById("tagline").innerText = r.tagline;
+      document.getElementById("topbar").innerText = r.phone + "  |  " + r.hours;
+      document.getElementById("address").innerText = "Address: " + r.address;
+      document.getElementById("phone").innerText = "Phone: " + r.phone;
+      document.getElementById("email").innerText = "Email: " + r.email;
+      document.getElementById("hours").innerText = r.hours;
+    }
+
+    // GET menu from the API and show it as a vertical list
+    async function loadMenu() {
+      const res = await fetch("/api/menu");
+      allDishes = await res.json();
+      let html = "";
+      for (const c of categories) {
+        html += `<h2 id="${c}">${c}</h2>`;
+        html += allDishes.filter(d => d.category === c).map(d => `
+          <div class="dish">
+            <div>
+              <h3>${d.name}</h3>
+              <p>${d.desc}</p>
+            </div>
+            <div class="right">
+              <div class="price">Rs ${d.price}</div>
+              <button class="plus" onclick="addToCart(${d.id})" title="Add to cart">+</button>
+            </div>
+          </div>`).join("");
+      }
+      document.getElementById("menu").innerHTML = html;
+      showCartInfo();
+    }
+
+    loadRestaurant();
+    loadMenu();
+  </script>
+</body>
+</html>
