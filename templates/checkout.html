@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Checkout - Spice Garden</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    button, input, textarea { font-family: inherit; }
+    body { font-family: 'Bitter', Georgia, serif; margin: 0; background: #f5ebdc; color: #3e2723; }
+    header { background: #3e2723; color: #f5ebdc; text-align: center; padding: 25px 20px; border-bottom: 4px solid #e8d5b7; }
+    header h1 { margin: 0; }
+    nav { background: #e8d5b7; text-align: center; padding: 10px; }
+    nav a { color: #3e2723; font-weight: bold; text-decoration: none; }
+    .container { max-width: 600px; margin: 25px auto; padding: 0 20px 40px; }
+    .box { background: #fffaf2; border-radius: 8px; padding: 20px; margin-bottom: 20px; border-top: 5px solid #3e2723; }
+    h2 { margin-top: 0; }
+    .item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #a1887f; padding: 10px 0; }
+    .item button { background: #3e2723; color: #f5ebdc; border: 0; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+    .total { text-align: right; font-size: 20px; font-weight: bold; margin-top: 12px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 2px solid #d7c4a3; border-radius: 6px; font-size: 15px; background: white; }
+    input:focus, textarea:focus { outline: none; border-color: #3e2723; }
+    button.main { background: #3e2723; color: #f5ebdc; border: 0; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+    button.main:hover { background: #8d6e63; }
+    .error { color: #b71c1c; font-weight: bold; }
+    footer { background: #3e2723; color: #e8d5b7; text-align: center; padding: 15px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header><h1>Checkout</h1></header>
+  <nav><a href="/">&larr; Back to Menu</a></nav>
+
+  <div class="container">
+    <div class="box" id="cartBox">
+      <h2>Your Order</h2>
+      <div id="items"></div>
+      <div class="total" id="total"></div>
+    </div>
+
+    <div class="box" id="formBox">
+      <h2>Delivery Details</h2>
+      <label>Name</label>
+      <input id="name" placeholder="Your full name">
+      <label>Phone number</label>
+      <input id="phone" placeholder="10-digit mobile number">
+      <label>Delivery address</label>
+      <textarea id="address" rows="3" placeholder="House no, street, city"></textarea>
+      <p class="error" id="error"></p>
+      <button class="main" onclick="placeOrder()">Place Order</button>
+    </div>
+
+    <div class="box" id="confirmBox" style="display:none"></div>
+  </div>
+
+  <footer id="footer"></footer>
+
+  <script>
+    let dishes = [];
+
+    function getCart() { return JSON.parse(localStorage.getItem("cart") || "{}"); }
+    function saveCart(cart) { localStorage.setItem("cart", JSON.stringify(cart)); }
+
+    function changeQty(id, change) {
+      const cart = getCart();
+      cart[id] = (cart[id] || 0) + change;
+      if (cart[id] <= 0) delete cart[id];
+      saveCart(cart);
+      showCart();
+    }
+
+    function showCart() {
+      const cart = getCart();
+      let html = "", total = 0;
+      for (const id in cart) {
+        const dish = dishes.find(d => d.id == id);
+        if (!dish) continue;
+        const amount = dish.price * cart[id];
+        total += amount;
+        html += `<div class="item">
+          <span>${dish.name} (Rs ${dish.price})</span>
+          <span>
+            <button onclick="changeQty(${id}, -1)">-</button>
+            <b> ${cart[id]} </b>
+            <button onclick="changeQty(${id}, 1)">+</button>
+            &nbsp; Rs ${amount}
+          </span>
+        </div>`;
+      }
+      document.getElementById("items").innerHTML = html || "<p>Your cart is empty. <a href='/'>Go to the menu</a></p>";
+      document.getElementById("total").innerText = total ? "Total: Rs " + total : "";
+    }
+
+    // GET menu and restaurant details from the API
+    async function start() {
+      const menuRes = await fetch("/api/menu");
+      dishes = await menuRes.json();
+      const infoRes = await fetch("/api/restaurant");
+      const r = await infoRes.json();
+      document.getElementById("footer").innerText = r.name + " | " + r.address + " | " + r.phone;
+      showCart();
+    }
+
+    // POST the order to the API
+    async function placeOrder() {
+      const cart = getCart();
+      const items = Object.keys(cart).map(id => ({ id: Number(id), qty: cart[id] }));
+      const order = {
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        address: document.getElementById("address").value,
+        items: items
+      };
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        document.getElementById("error").innerText = data.error;
+        return;
+      }
+
+      localStorage.removeItem("cart");
+      document.getElementById("cartBox").style.display = "none";
+      document.getElementById("formBox").style.display = "none";
+      const box = document.getElementById("confirmBox");
+      box.style.display = "block";
+      box.innerHTML = `
+        <h2>Order placed! Thank you, ${data.name}.</h2>
+        <p><b>Order number:</b> #${data.id}</p>
+        <p>${data.items.map(i => i.name + " x " + i.qty).join("<br>")}</p>
+        <p><b>Total to pay on delivery: Rs ${data.total}</b></p>
+        <p>We will deliver to: ${data.address}</p>
+        <button class="main" onclick="cancelOrder(${data.id})">Cancel Order</button>
+        <p><a href="/">Order something else</a></p>`;
+    }
+
+    // DELETE the order using the API
+    async function cancelOrder(id) {
+      await fetch("/api/orders/" + id, { method: "DELETE" });
+      document.getElementById("confirmBox").innerHTML =
+        "<h2>Order cancelled.</h2><p><a href='/'>Back to the menu</a></p>";
+    }
+
+    start();
+  </script>
+</body>
+</html>
