@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
-    button, input, textarea { font-family: inherit; }
+    button, input, textarea, select { font-family: inherit; }
     body { font-family: 'Bitter', Georgia, serif; margin: 0; background: #f5ebdc; color: #3e2723; }
     header { background: #3e2723; color: #f5ebdc; text-align: center; padding: 25px 20px; border-bottom: 4px solid #e8d5b7; }
     header h1 { margin: 0; }
@@ -22,11 +21,16 @@
     .item button { background: #3e2723; color: #f5ebdc; border: 0; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; }
     .total { text-align: right; font-size: 20px; font-weight: bold; margin-top: 12px; }
     label { display: block; margin-top: 12px; font-weight: bold; }
-    input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 2px solid #d7c4a3; border-radius: 6px; font-size: 15px; background: white; }
-    input:focus, textarea:focus { outline: none; border-color: #3e2723; }
+    label.opt { display: inline-block; margin-right: 16px; }
+    input[type=radio], input[type=checkbox] { width: auto; margin: 0 6px 0 0; }
+    label.check { font-weight: normal; }
+    input, textarea, select { width: 100%; padding: 10px; margin-top: 5px; border: 2px solid #d7c4a3; border-radius: 6px; font-size: 15px; background: white; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #3e2723; }
     button.main { background: #3e2723; color: #f5ebdc; border: 0; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
     button.main:hover { background: #8d6e63; }
+    .half { display: flex; gap: 10px; }
     .error { color: #b71c1c; font-weight: bold; }
+    .note { font-size: 13px; color: #6d4c41; }
     footer { background: #3e2723; color: #e8d5b7; text-align: center; padding: 15px; font-size: 14px; }
   </style>
 </head>
@@ -41,14 +45,71 @@
       <div class="total" id="total"></div>
     </div>
 
-    <div class="box" id="formBox">
-      <h2>Delivery Details</h2>
+    <!-- Shown only if the customer is not logged in -->
+    <div class="box" id="loginBox" style="display:none">
+      <h2>Login to place your order</h2>
+      <label>Name <span class="note">(only for registering)</span></label>
+      <input id="lname" placeholder="Your name">
+      <label>Email</label>
+      <input id="lemail" type="email" placeholder="Email">
+      <label>Password</label>
+      <input id="lpass" type="password" placeholder="At least 4 characters">
+      <p class="error" id="lerror"></p>
+      <button class="main" onclick="auth('login')">Login</button>
+      <button class="main" onclick="auth('register')">Register</button>
+    </div>
+
+    <div class="box" id="formBox" style="display:none">
+      <h2>Your Details</h2>
       <label>Name</label>
       <input id="name" placeholder="Your full name">
       <label>Phone number</label>
       <input id="phone" placeholder="10-digit mobile number">
-      <label>Delivery address</label>
-      <textarea id="address" rows="3" placeholder="House no, street, city"></textarea>
+
+      <label>Order type</label>
+      <label class="opt"><input type="radio" name="type" value="delivery" onchange="toggleType()" checked>Home Delivery</label>
+      <label class="opt"><input type="radio" name="type" value="dinein" onchange="toggleType()">Dine-in</label>
+
+      <div id="deliveryBox">
+        <label>Delivery address</label>
+        <select id="saved" onchange="if (this.value) document.getElementById('address').value = this.value"></select>
+        <textarea id="address" rows="3" placeholder="House no, street, city"></textarea>
+        <label class="check"><input type="checkbox" id="saveAddr">Save this address for next time</label>
+      </div>
+      <div id="tableBox" style="display:none">
+        <label>Table number</label>
+        <input id="table" placeholder="e.g. 5">
+      </div>
+
+      <label>Payment</label>
+      <label class="opt"><input type="radio" name="pm" value="cash" onchange="showPay()" checked>Cash</label>
+      <label class="opt"><input type="radio" name="pm" value="upi" onchange="showPay()">UPI</label>
+      <label class="opt"><input type="radio" name="pm" value="card" onchange="showPay()">Card</label>
+      <label class="opt"><input type="radio" name="pm" value="netbanking" onchange="showPay()">Net Banking</label>
+
+      <div id="pay_cash" class="pay"><p class="note">Pay in cash when you receive your order or at the table.</p></div>
+      <div id="pay_upi" class="pay" style="display:none">
+        <input id="upiid" placeholder="UPI ID (e.g. name@upi)">
+      </div>
+      <div id="pay_card" class="pay" style="display:none">
+        <input id="cno" placeholder="Card number (16 digits)" maxlength="19">
+        <div class="half">
+          <input id="exp" placeholder="MM/YY">
+          <input id="cvv" type="password" placeholder="CVV" maxlength="4">
+        </div>
+      </div>
+      <div id="pay_netbanking" class="pay" style="display:none">
+        <select id="bank">
+          <option value="">Select your bank</option>
+          <option>State Bank of India</option>
+          <option>HDFC Bank</option>
+          <option>ICICI Bank</option>
+          <option>Axis Bank</option>
+          <option>Kotak Mahindra Bank</option>
+        </select>
+      </div>
+      <p class="note">Demo only: UPI, card and net banking details are checked for format, and no money is charged.</p>
+
       <p class="error" id="error"></p>
       <button class="main" onclick="placeOrder()">Place Order</button>
     </div>
@@ -60,6 +121,12 @@
 
   <script>
     let dishes = [];
+    let me = { loggedIn: false };
+
+    // Stops text from user input being treated as HTML
+    function esc(text) {
+      return String(text).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
 
     function getCart() { return JSON.parse(localStorage.getItem("cart") || "{}"); }
     function saveCart(cart) { localStorage.setItem("cart", JSON.stringify(cart)); }
@@ -92,6 +159,54 @@
       }
       document.getElementById("items").innerHTML = html || "<p>Your cart is empty. <a href='/'>Go to the menu</a></p>";
       document.getElementById("total").innerText = total ? "Total: Rs " + total : "";
+      updateView(total > 0);
+    }
+
+    // Show the login box or the order form, depending on login and cart
+    function updateView(hasItems) {
+      document.getElementById("loginBox").style.display = (!me.loggedIn && hasItems) ? "block" : "none";
+      document.getElementById("formBox").style.display = (me.loggedIn && hasItems) ? "block" : "none";
+    }
+
+    function toggleType() {
+      const t = document.querySelector("input[name=type]:checked").value;
+      document.getElementById("deliveryBox").style.display = t === "delivery" ? "block" : "none";
+      document.getElementById("tableBox").style.display = t === "dinein" ? "block" : "none";
+    }
+
+    function showPay() {
+      const m = document.querySelector("input[name=pm]:checked").value;
+      document.querySelectorAll(".pay").forEach(p => p.style.display = "none");
+      document.getElementById("pay_" + m).style.display = "block";
+    }
+
+    // Login / register from the checkout page
+    async function auth(kind) {
+      const res = await fetch("/api/" + kind, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: document.getElementById("lname").value,
+          email: document.getElementById("lemail").value,
+          password: document.getElementById("lpass").value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { document.getElementById("lerror").innerText = data.error; return; }
+      await loadUser();
+      showCart();
+    }
+
+    // GET the logged-in user and their saved addresses
+    async function loadUser() {
+      me = await (await fetch("/api/me")).json();
+      if (!me.loggedIn) return;
+      document.getElementById("name").value = me.name;
+      const res = await fetch("/api/addresses");
+      const list = await res.json();
+      document.getElementById("saved").innerHTML =
+        "<option value=''>-- Choose a saved address --</option>" +
+        list.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join("");
     }
 
     // GET menu and restaurant details from the API
@@ -101,6 +216,7 @@
       const infoRes = await fetch("/api/restaurant");
       const r = await infoRes.json();
       document.getElementById("footer").innerText = r.name + " | " + r.address + " | " + r.phone;
+      await loadUser();
       showCart();
     }
 
@@ -108,11 +224,26 @@
     async function placeOrder() {
       const cart = getCart();
       const items = Object.keys(cart).map(id => ({ id: Number(id), qty: cart[id] }));
+      const type = document.querySelector("input[name=type]:checked").value;
+      const method = document.querySelector("input[name=pm]:checked").value;
+      const address = document.getElementById("address").value.trim();
+
+      const payment = { method: method };
+      if (method === "upi") payment.upi = document.getElementById("upiid").value;
+      if (method === "card") {
+        payment.number = document.getElementById("cno").value;
+        payment.cvv = document.getElementById("cvv").value;
+      }
+      if (method === "netbanking") payment.bank = document.getElementById("bank").value;
+
       const order = {
         name: document.getElementById("name").value,
         phone: document.getElementById("phone").value,
-        address: document.getElementById("address").value,
-        items: items
+        type: type,
+        address: address,
+        table: document.getElementById("table").value,
+        items: items,
+        payment: payment
       };
 
       const res = await fetch("/api/orders", {
@@ -127,17 +258,26 @@
         return;
       }
 
+      // Save the address for next time if the customer ticked the box
+      if (type === "delivery" && document.getElementById("saveAddr").checked) {
+        await fetch("/api/addresses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: address })
+        });
+      }
+
       localStorage.removeItem("cart");
       document.getElementById("cartBox").style.display = "none";
       document.getElementById("formBox").style.display = "none";
       const box = document.getElementById("confirmBox");
       box.style.display = "block";
       box.innerHTML = `
-        <h2>Order placed! Thank you, ${data.name}.</h2>
+        <h2>Order placed! Thank you, ${esc(data.name)}.</h2>
         <p><b>Order number:</b> #${data.id}</p>
-        <p>${data.items.map(i => i.name + " x " + i.qty).join("<br>")}</p>
-        <p><b>Total to pay on delivery: Rs ${data.total}</b></p>
-        <p>We will deliver to: ${data.address}</p>
+        <p>${data.items.map(i => esc(i.name) + " x " + i.qty).join("<br>")}</p>
+        <p><b>Total: Rs ${data.total}</b> &nbsp;|&nbsp; Payment: ${esc(data.payment)}</p>
+        <p>${esc(data.where)}</p>
         <button class="main" onclick="cancelOrder(${data.id})">Cancel Order</button>
         <p><a href="/">Order something else</a></p>`;
     }
