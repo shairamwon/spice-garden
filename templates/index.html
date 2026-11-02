@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Spice Garden</title>
+  <title>About Us - Spice Garden</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,22 +11,23 @@
     button, input, textarea { font-family: inherit; }
     body { font-family: 'Bitter', Georgia, serif; margin: 0; background: #f5ebdc; color: #3e2723; }
     .topbar { background: #3e2723; color: #f5ebdc; text-align: center; padding: 8px; font-size: 14px; }
-    header { background: #4e342e; color: #f5ebdc; text-align: center; padding: 40px 20px; border-bottom: 4px solid #e8d5b7; }
-    header h1 { margin: 0; font-size: 40px; }
+    header { background: #4e342e; color: #f5ebdc; text-align: center; padding: 50px 20px; border-bottom: 4px solid #e8d5b7; }
+    header h1 { margin: 0; font-size: 44px; }
+    header p { font-size: 18px; margin: 10px 0 22px; }
+    .btn { display: inline-block; background: #e8d5b7; color: #3e2723; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 16px; }
+    .btn:hover { background: #fffaf2; }
     nav { background: #e8d5b7; text-align: center; padding: 10px; }
     nav a { color: #3e2723; margin: 0 15px; text-decoration: none; font-weight: bold; }
-    .container { max-width: 700px; margin: auto; padding: 10px 20px 100px; }
-    h2 { background: #3e2723; color: #f5ebdc; padding: 10px 15px; border-radius: 8px; margin: 30px 0 0; }
+    nav a.active { border-bottom: 3px solid #3e2723; }
+    .wrap { max-width: 700px; margin: 25px auto 0; padding: 0 20px; }
+    h2 { background: #3e2723; color: #f5ebdc; padding: 10px 15px; border-radius: 8px; margin: 0 0 12px; }
 
-    /* About Us */
-    .about { max-width: 700px; margin: 25px auto 0; padding: 0 20px; }
-    .about p { line-height: 1.6; margin-top: 0; }
-    .highlights { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-    .highlights div { flex: 1; min-width: 150px; background: #e8d5b7; border-radius: 6px; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; }
+    .panel { background: #fffaf2; border-radius: 8px; padding: 18px; border-top: 5px solid #3e2723; }
+    .panel p { line-height: 1.7; margin: 0; }
+    .highlights { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .highlights div { flex: 1; min-width: 150px; background: #e8d5b7; border-radius: 6px; padding: 12px; text-align: center; font-weight: bold; font-size: 14px; }
 
     /* Account box + order history */
-    .account { max-width: 700px; margin: 20px auto 0; padding: 0 20px; }
-    .panel { background: #fffaf2; border-radius: 8px; padding: 15px; border-top: 5px solid #3e2723; }
     .panel input { width: 100%; padding: 9px; margin: 4px 0; border: 2px solid #d7c4a3; border-radius: 6px; font-size: 15px; background: white; }
     .panel button { background: #3e2723; color: #f5ebdc; border: 0; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 6px; }
     .panel button:hover { background: #8d6e63; }
@@ -36,19 +37,10 @@
     summary { cursor: pointer; font-weight: bold; }
     .order { border-bottom: 1px dotted #a1887f; padding: 10px 0; font-size: 14px; }
 
-    /* Vertical menu: one dish per row */
-    .dish { display: flex; justify-content: space-between; align-items: center; background: #fffaf2; border-bottom: 2px solid #e8d5b7; padding: 14px 15px; }
-    .dish h3 { margin: 0 0 4px; }
-    .dish p { margin: 0; font-size: 14px; color: #6d4c41; }
-    .right { text-align: center; }
-    .price { font-weight: bold; margin-bottom: 6px; }
-    .plus { background: #3e2723; color: #f5ebdc; border: 2px solid #3e2723; width: 36px; height: 36px; border-radius: 50%; font-size: 22px; cursor: pointer; line-height: 1; }
-    .plus:hover { background: #8d6e63; border-color: #8d6e63; }
-
-    .cartbar { position: fixed; bottom: 0; left: 0; right: 0; background: #3e2723; color: #f5ebdc; border-top: 3px solid #e8d5b7; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-    .cartbar a { background: #e8d5b7; color: #3e2723; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; }
-    #contact { background: #e8d5b7; padding: 30px 20px; text-align: center; }
-    footer { background: #3e2723; color: #e8d5b7; text-align: center; padding: 15px; margin-bottom: 60px; }
+    #contact { background: #e8d5b7; padding: 30px 20px; text-align: center; margin-top: 30px; }
+    #contact h2 { display: inline-block; }
+    #contact p { margin: 8px 0; }
+    footer { background: #3e2723; color: #e8d5b7; text-align: center; padding: 15px; }
   </style>
 </head>
 <body>
@@ -57,33 +49,32 @@
   <header>
     <h1 id="rname">Spice Garden</h1>
     <p id="tagline"></p>
+    <a class="btn" href="/menu">View Our Menu</a>
   </header>
 
   <nav>
-    <a href="#about">About</a>
-    <a href="#Starters">Starters</a>
-    <a href="#Main Dish">Main Dish</a>
-    <a href="#Drinks">Drinks</a>
-    <a href="#Dessert">Dessert</a>
+    <a href="/" class="active">Home / About Us</a>
+    <a href="/menu">Menu</a>
     <a href="#contact">Contact</a>
+    <a href="/checkout">Checkout</a>
   </nav>
 
   <!-- About Us -->
-  <div class="about" id="about">
-    <h2 style="margin-top:0">About Us</h2>
+  <div class="wrap" id="about">
+    <h2>About Us</h2>
     <div class="panel">
       <p id="aboutText"></p>
       <div class="highlights" id="highlights"></div>
     </div>
   </div>
 
-  <!-- Login / register, saved after login: order history -->
-  <div class="account"><div class="panel" id="account"></div></div>
-
-  <div class="container" id="menu"></div>
+  <!-- Login / register; after login it shows order history -->
+  <div class="wrap">
+    <div class="panel" id="account"></div>
+  </div>
 
   <section id="contact">
-    <h2 style="margin-top:0">Visit or Call Us</h2>
+    <h2>Visit or Call Us</h2>
     <p id="address"></p>
     <p id="phone"></p>
     <p id="email"></p>
@@ -92,40 +83,10 @@
 
   <footer>&copy; 2026 Spice Garden. All rights reserved.</footer>
 
-  <div class="cartbar">
-    <span id="cartinfo">Cart is empty</span>
-    <a href="/checkout">Checkout</a>
-  </div>
-
   <script>
-    let allDishes = [];
-    const categories = ["Starters", "Main Dish", "Drinks", "Dessert"];
-
     // Stops text from user input being treated as HTML
     function esc(text) {
       return String(text).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    }
-
-    // Cart is saved in the browser so the checkout page can read it
-    function getCart() { return JSON.parse(localStorage.getItem("cart") || "{}"); }
-    function saveCart(cart) { localStorage.setItem("cart", JSON.stringify(cart)); }
-
-    function addToCart(id) {
-      const cart = getCart();
-      cart[id] = (cart[id] || 0) + 1;
-      saveCart(cart);
-      showCartInfo();
-    }
-
-    function showCartInfo() {
-      const cart = getCart();
-      let count = 0, total = 0;
-      for (const id in cart) {
-        const dish = allDishes.find(d => d.id == id);
-        if (dish) { count += cart[id]; total += dish.price * cart[id]; }
-      }
-      document.getElementById("cartinfo").innerText =
-        count === 0 ? "Cart is empty" : count + " item(s)  |  Total: Rs " + total;
     }
 
     // GET restaurant details from the API
@@ -141,29 +102,6 @@
       document.getElementById("hours").innerText = r.hours;
       document.getElementById("aboutText").innerText = r.about;
       document.getElementById("highlights").innerHTML = r.highlights.map(h => `<div>${esc(h)}</div>`).join("");
-    }
-
-    // GET menu from the API and show it as a vertical list
-    async function loadMenu() {
-      const res = await fetch("/api/menu");
-      allDishes = await res.json();
-      let html = "";
-      for (const c of categories) {
-        html += `<h2 id="${c}">${c}</h2>`;
-        html += allDishes.filter(d => d.category === c).map(d => `
-          <div class="dish">
-            <div>
-              <h3>${d.name}</h3>
-              <p>${d.desc}</p>
-            </div>
-            <div class="right">
-              <div class="price">Rs ${d.price}</div>
-              <button class="plus" onclick="addToCart(${d.id})" title="Add to cart">+</button>
-            </div>
-          </div>`).join("");
-      }
-      document.getElementById("menu").innerHTML = html;
-      showCartInfo();
     }
 
     // ---------- Account: login / register / logout ----------
@@ -212,7 +150,7 @@
     async function loadOrders() {
       const res = await fetch("/api/orders");
       const list = await res.json();
-      const html = list.length === 0 ? "<p>You have no orders yet.</p>" : list.map(o => `
+      const html = list.length === 0 ? "<p>You have no orders yet. <a href='/menu'>Browse the menu</a></p>" : list.map(o => `
         <div class="order">
           <b>Order #${o.id}</b> &mdash; ${esc(o.time)}<br>
           ${o.items.map(i => esc(i.name) + " x " + i.qty).join(", ")}<br>
@@ -230,7 +168,6 @@
     }
 
     loadRestaurant();
-    loadMenu();
     loadAccount();
   </script>
 </body>
