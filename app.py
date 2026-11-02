@@ -68,7 +68,12 @@ def current_user():
 # ---------- Frontend pages ----------
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("index.html")      # Home page = About Us
+
+
+@app.route("/menu")
+def menu_page():
+    return render_template("menu.html")       # Menu page = all the food
 
 
 @app.route("/checkout")
