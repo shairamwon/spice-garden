@@ -14,6 +14,12 @@ restaurant = {
     "phone": "+91 98765 43210",
     "email": "hello@spicegarden.example",
     "hours": "Open daily: 12:00 pm - 11:00 pm",
+    # Shown in the "About Us" section on the front page - edit this text freely
+    "about": "Spice Garden is a family-run restaurant serving authentic Indian food in the heart of "
+             "Sector 29 Market, Gurugram. Our recipes come from home kitchens across India, and every "
+             "dish is cooked fresh to order with hand-ground spices. Whether you are joining us for a "
+             "family dinner or ordering in, we want every meal to feel like home.",
+    "highlights": ["Fresh ingredients daily", "Traditional family recipes", "Dine-in & home delivery"],
 }
 
 # ---------- Menu (6 dishes in each category) ----------
