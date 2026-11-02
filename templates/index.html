@@ -18,6 +18,12 @@
     .container { max-width: 700px; margin: auto; padding: 10px 20px 100px; }
     h2 { background: #3e2723; color: #f5ebdc; padding: 10px 15px; border-radius: 8px; margin: 30px 0 0; }
 
+    /* About Us */
+    .about { max-width: 700px; margin: 25px auto 0; padding: 0 20px; }
+    .about p { line-height: 1.6; margin-top: 0; }
+    .highlights { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .highlights div { flex: 1; min-width: 150px; background: #e8d5b7; border-radius: 6px; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; }
+
     /* Account box + order history */
     .account { max-width: 700px; margin: 20px auto 0; padding: 0 20px; }
     .panel { background: #fffaf2; border-radius: 8px; padding: 15px; border-top: 5px solid #3e2723; }
@@ -54,12 +60,22 @@
   </header>
 
   <nav>
+    <a href="#about">About</a>
     <a href="#Starters">Starters</a>
     <a href="#Main Dish">Main Dish</a>
     <a href="#Drinks">Drinks</a>
     <a href="#Dessert">Dessert</a>
     <a href="#contact">Contact</a>
   </nav>
+
+  <!-- About Us -->
+  <div class="about" id="about">
+    <h2 style="margin-top:0">About Us</h2>
+    <div class="panel">
+      <p id="aboutText"></p>
+      <div class="highlights" id="highlights"></div>
+    </div>
+  </div>
 
   <!-- Login / register, saved after login: order history -->
   <div class="account"><div class="panel" id="account"></div></div>
@@ -123,6 +139,8 @@
       document.getElementById("phone").innerText = "Phone: " + r.phone;
       document.getElementById("email").innerText = "Email: " + r.email;
       document.getElementById("hours").innerText = r.hours;
+      document.getElementById("aboutText").innerText = r.about;
+      document.getElementById("highlights").innerHTML = r.highlights.map(h => `<div>${esc(h)}</div>`).join("");
     }
 
     // GET menu from the API and show it as a vertical list
